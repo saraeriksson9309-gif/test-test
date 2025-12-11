@@ -1,0 +1,2196 @@
+<!DOCTYPE html>
+<html lang="de" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KI-Navigator</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Font "Inter" -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Basis-Schriftart setzen */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            /* slate-100 */
+        }
+
+        /* Gradient-Text-Stil */
+        .gradient-text {
+            background: linear-gradient(45deg, #3b82f6, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+
+        /* Tool-Karten-Stil (aus ki_tools.html) */
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        /* News-Item-Animation (aus ki_news.html) */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .news-item {
+            animation: fadeIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        /* Styling für die neuen Kacheln */
+        .tile-card {
+            background: linear-gradient(135deg, white, #f9fafb);
+            /* Leichter Verlauf */
+            border-radius: 1rem;
+            /* rundere Ecken */
+            padding: 1.5rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease-in-out;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            /* Für Glanz-Effekt */
+            position: relative;
+        }
+
+        .tile-card:hover {
+            transform: translateY(-8px) scale(1.03);
+            /* Stärkerer 3D-Effekt */
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Subtiler Glanz-Effekt beim Hovern */
+        .tile-card::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0) 70%);
+            transform: rotate(45deg);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .tile-card:hover::before {
+            opacity: 1;
+            animation: shine 1.5s ease-out;
+        }
+
+        @keyframes shine {
+            0% {
+                transform: scale(0) rotate(45deg);
+                opacity: 0.2;
+            }
+
+            80% {
+                transform: scale(2) rotate(45deg);
+                opacity: 0.05;
+            }
+
+            100% {
+                transform: scale(2.5) rotate(45deg);
+                opacity: 0;
+            }
+        }
+
+        /* Styling für die kopierbaren Inhaltsblöcke */
+        .copy-content {
+            background-color: #ffffff;
+            color: #334155;
+            /* slate-700 */
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            font-family: 'Inter', sans-serif;
+            /* Normale Schrift */
+            font-size: 0.875rem;
+            line-height: 1.5rem;
+            white-space: pre-wrap;
+            /* Behält Formatierung bei */
+            border: 1px solid #e2e8f0;
+            /* slate-200 */
+        }
+
+        /* Styling für den Kopier-Button */
+        .copy-btn {
+            background-color: #4f46e5;
+            /* indigo-600 */
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .copy-btn:hover {
+            background-color: #4338ca;
+            /* indigo-700 */
+        }
+
+        .copy-btn.copied {
+            background-color: #10b981;
+            /* emerald-500 */
+        }
+
+        /* Accordion-Button-Styling */
+        .accordion-btn svg {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .accordion-btn[aria-expanded="true"] svg {
+            transform: rotate(180deg);
+        }
+
+        .accordion-content {
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            background-color: #f8fafc;
+            /* slate-50 */
+            border-top: 1px solid #e2e8f0;
+            /* slate-200 */
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800" id="page-top">
+
+    <!-- Feste Top-Navigation -->
+    <header class="fixed top-0 left-0 right-0 bg-white shadow-md z-50">
+        <!-- Begrenzung der Breite und Zentrierung -->
+        <nav class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+            <!-- Titel als Link zur Oberseite -->
+            <a href="#page-top" class="text-2xl font-bold gradient-text">
+                KI-Navigator
+            </a>
+            <div class="space-x-4 hidden md:block">
+                <a href="#anleitungen"
+                    class="text-slate-600 hover:text-blue-600 font-medium transition-colors">Anleitungen</a>
+                <a href="#rollen" class="text-slate-600 hover:text-blue-600 font-medium transition-colors">KI-Rollen</a>
+                <a href="#links" class="text-slate-600 hover:text-blue-600 font-medium transition-colors">Tools &
+                    Links</a>
+                <a href="#news" class="text-slate-600 hover:text-blue-600 font-medium transition-colors">KI-News</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hauptinhalt (mit Padding-Top für die fixe Navigation und Breitenbegrenzung) -->
+    <main class="max-w-5xl mx-auto px-6 py-12 pt-24">
+
+        <!-- ===== Sektion 0: Kachel-Navigation ===== -->
+        <section id="navigation-tiles" class="mb-20">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                <!-- Kachel 1: Anleitungen -->
+                <a href="#anleitungen" class="tile-card group">
+                    <div class="mb-3">
+                        <svg class="w-10 h-10 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-slate-800 mb-1 group-hover:text-blue-600 transition-colors">
+                        Anleitungen & Strategien</h3>
+                    <p class="text-sm text-slate-500">Tipps zu Markdown, Github Pages und strategischem Prompting.</p>
+                </a>
+
+                <!-- Kachel 2: Rollen -->
+                <a href="#rollen" class="tile-card group">
+                    <div class="mb-3">
+                        <svg class="w-10 h-10 text-violet-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-slate-800 mb-1 group-hover:text-violet-600 transition-colors">
+                        KI-Rollen & Personas</h3>
+                    <p class="text-sm text-slate-500">Vordefinierte Prompts für spezifische Aufgaben und Rollen.</p>
+                </a>
+
+                <!-- Kachel 3: Links -->
+                <a href="#links" class="tile-card group">
+                    <div class="mb-3">
+                        <svg class="w-10 h-10 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-slate-800 mb-1 group-hover:text-pink-600 transition-colors">
+                        Tools & Link-Listen</h3>
+                    <p class="text-sm text-slate-500">Nützliche KI-Tools, Modelle und Generatoren.</p>
+                </a>
+
+                <!-- Kachel 4: News -->
+                <a href="#news" class="tile-card group">
+                    <div class="mb-3">
+                        <svg class="w-10 h-10 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-9.75c-.621 0-1.125-.504-1.125-1.125V18.375m0-10.5h3.375c.621 0 1.125.504 1.125 1.125v6.75c0 .621-.504 1.125-1.125 1.125h-9.75c-.621 0-1.125-.504-1.125-1.125v-6.75c0-.621.504-1.125 1.125-1.125H6.75" />
+                        </svg>
+                    </div>
+                    <h3
+                        class="text-xl font-semibold text-slate-800 mb-1 group-hover:text-emerald-600 transition-colors">
+                        Aktuelle KI-News</h3>
+                    <p class="text-sm text-slate-500">Live-Feed mit den neuesten Entwicklungen aus der KI-Welt.</p>
+                </a>
+
+            </div>
+        </section>
+
+        <!-- ===== Sektion 1: Anleitungen ===== -->
+        <section id="anleitungen" class="mb-16">
+            <h2 class="text-4xl font-bold text-center mb-10 gradient-text">Anleitungen & Strategien</h2>
+            <div class="space-y-6">
+
+
+
+                <!-- Accordion-Item: Markdown -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <button class="accordion-btn w-full flex justify-between items-center p-5 text-left"
+                        aria-expanded="false">
+                        <h3 class="text-xl font-semibold text-slate-800">Kompaktanleitung Markdown</h3>
+                        <svg class="w-6 h-6 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </button>
+                    <div class="accordion-content hidden px-5 py-5">
+                        <button class="copy-btn">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a2.25 2.25 0 01-2.25 2.25h-3a2.25 2.25 0 01-2.25-2.25V4.5A2.25 2.25 0 019 2.25h3A2.25 2.25 0 0113.5 4.5v0c0 .212.029.418.084.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V7.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                            </svg>
+                            <span>Kopieren</span>
+                        </button>
+                        <div class="copy-content">Was ist Markdown?
+
+                            Markdown ist eine einfache Auszeichnungssprache, mit der ihr Texte schnell und übersichtlich
+                            strukturieren könnt. Sie wird oft in Dokumentationen, Notizen und KI-Prompts verwendet.
+
+                            Grundelemente von Markdown
+
+                            1. Überschriften
+                            Setze ein oder mehrere "#" vor den Text:
+                            # Große Überschrift
+                            ## Mittlere Überschrift
+                            ### Kleine Überschrift
+
+                            2. Fett & Kursiv
+                            **fett** wird fett dargestellt.
+                            *kursiv* wird kursiv dargestellt.
+
+                            3. Listen
+                            Ungeordnete Liste:
+                            - Erster Punkt
+                            - Zweiter Punkt
+
+                            Geordnete Liste:
+                            1. Erster Punkt
+                            2. Zweiter Punkt
+
+                            4. Links & Bilder
+                            Link:
+                            [Linktext](https://example.com)
+
+                            Bild:
+                            ![Bildbeschreibung](https://bild-url.de)
+
+                            5. Code (Inline oder Block)
+                            Kurzer Code im Text:
+                            `print("Hallo")`
+
+                            Längerer Codeblock:
+                            Drei Gravis-Zeichen ( ``` ) oben und unten um den Code setzen
+
+                            6. Zitate
+                            > Dies ist ein Zitat.
+
+                            Warum ist Markdown nützlich?
+                            - Es ist einfach zu schreiben und zu lesen.
+                            - Es funktioniert in vielen Tools wie GitHub, Notion oder ChatGPT.
+                            - Es eignet sich hervorragend für strukturierte Prompts oder Dokumentationen.
+
+                            Tipp zur Anwendung im Prompting
+
+                            Ihr könnt Markdown direkt im Prompt verwenden, um die Formatierung der KI-Antwort zu
+                            beeinflussen. Das ist besonders praktisch für Listen, Überschriften oder die übersichtliche
+                            Gliederung längerer Inhalte.
+
+                            Beispiel:
+                            "Du bist ein Lehrer. Erkläre mir das Thema 'Nachhaltigkeit' in drei Absätzen und nutze
+                            Markdown-Überschriften."</div>
+                    </div>
+                </div>
+
+                <!-- Accordion-Item: Prompt-Anleitung -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <button class="accordion-btn w-full flex justify-between items-center p-5 text-left"
+                        aria-expanded="false">
+                        <h3 class="text-xl font-semibold text-slate-800">Anleitung zum Prompten mit KI-Tools</h3>
+                        <svg class="w-6 h-6 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </button>
+                    <div class="accordion-content hidden px-5 py-5">
+                        <button class="copy-btn">
+                            <svg class="w-4 h-4" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
+                                fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a2.25 2.25 0 01-2.25 2.25h-3a2.25 2.25 0 01-2.25-2.25V4.5A2.25 2.25 0 019 2.25h3A2.25 2.25 0 0113.5 4.5v0c0 .212.029.418.084.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V7.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                            </svg>
+                            <span>Kopieren</span>
+                        </button>
+                        <div class="copy-content">Anleitung zum Prompten mit KI-Tools
+
+                            Diese Anleitung vermittelt dir, wie du mithilfe von Prompt Engineering effektive Eingaben
+                            (Prompts) für KI-Modelle wie ChatGPT, Gemini, Claude, Mistral gestaltest. Ziel ist es,
+                            präzise, kreative und hilfreiche Antworten zu erhalten.
+
+                            1. Was ist ein Prompt?
+
+                            Ein Prompt ist eine Eingabeaufforderung an ein KI-Modell. Er bestimmt maßgeblich, wie die Kl
+                            reagiert. Gut gestaltete Prompts führen zu klareren und relevanteren Ergebnissen.
+
+                            2. Grundregeln für effektives Prompting
+
+                            - Sei präzise: Stelle eine klare und konkrete Aufgabe.
+                            - Gib Kontext: Beschreibe das Ziel, die Zielgruppe und ggf. Hintergrundinfos.
+                            - Nutze Rollen: Weise der Kl eine Rolle zu, z. B. "Du bist ein erfahrener Jurist."
+                            - Strukturiere deine Eingabe: Verwende Absätze, Listen, Formatvorgaben etc.
+                            - Teste Varianten: Probiere verschiedene Formulierungen und vergleiche die Ergebnisse.
+
+                            3. Arten von Prompts
+
+                            - Informierende Prompts: "Erkläre mir den Unterschied zwischen ML und DL."
+                            - Kreative Prompts: "Erfinde eine Geschichte über eine sprechende Katze."
+                            - Analytische Prompts: "Analysiere die Stimmung dieses Textes: ..."
+                            - Produktive Prompts: "Schreibe eine E-Mail an meinen Chef über..."
+                            - Transformative Prompts: "Formuliere diesen Absatz in einfacher Sprache um."
+
+                            4. Erweiterte Techniken
+
+                            - Prompt Chaining: Schrittweise Annäherung an komplexe Aufgaben über mehrere Prompts.
+                            - Meta-Prompts: Die Kl wird selbst zur Prompt-Expertin (z. B. "Du bist ein
+                            Prompt-Coach...").
+                            - Rollen + Kontext (empfohlen!):
+                            Beispiel: "Du bist ein Umweltjournalist. Erstelle für Instagram einen 100-Wörter-Text über
+                            saubere Energie für 20-30-Jährige."
+
+                            5. Praktische Tipps
+
+                            - Verwende das Format: Rolle + Kontext + Aufgabe.
+                            - Begrenze den Umfang, wenn nötig: "max. 100 Wörter"
+                            - Gib Formatvorgaben an: "als Bullet-Liste", "im CSV-Format", etc.
+                            - Achte auf den Stil: "freundlich und motivierend" / "fachlich und sachlich"
+                            - Nutze Beispiele: "Wie dieses Beispiel: ..."
+
+                            6. Häufige Fehler vermeiden
+
+                            - Zu vage oder offene Prompts
+                            - Fehlender Kontext oder Zielgruppe
+                            - Unklare Erwartungen (z. B. "Schreibe etwas über KI")
+                            - Zu viele Aufgaben in einem Prompt
+
+                            7. Übung macht den Prompt-Meister
+
+                            - Teste deine Prompts in verschiedenen Modellen (ChatGPT, Claude, Mistral...)
+                            - Vergleiche: Welche Antwort ist treffender, kreativer oder strukturierter?
+                            - Lerne iterativ: Passe deinen Prompt an und verbessere ihn schrittweise
+
+                            8. Nützliche Anwendungsbereiche für Prompts
+
+                            - Kreatives Schreiben
+                            - Wissenschaftliche Zusammenfassungen
+                            - Datenextraktion
+                            - Code-Generierung
+                            - Brainstorming
+                            - Übersetzung
+                            - E-Mail-Formulierung
+                            - Social Media
+                            - Coaching & Simulation
+
+                            Fazit:
+
+                            Gutes Prompt Engineering bedeutet, der KI klare und inspirierende Aufgaben zu geben. Du bist
+                            der Dirigent - je besser du die Anweisung gibst, desto harmonischer klingt das Ergebnis.
+                            Nutze Rollen, Kontext, Struktur und Beispiele, um die besten Resultate zu erzielen.</div>
+                    </div>
+                </div>
+
+                <!-- Accordion-Item: Prompt-Anleitung mit Kontext -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <button class="accordion-btn w-full flex justify-between items-center p-5 text-left"
+                        aria-expanded="false">
+                        <h3 class="text-xl font-semibold text-slate-800">Anleitung: Gute Prompts mit Kontext, Aufgabe,
+                            Ziel</h3>
+                        <svg class="w-6 h-6 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </button>
+                    <div class="accordion-content hidden px-5 py-5">
+                        <button class="copy-btn">
+                            <svg class="w-4 h-4" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
+                                fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a2.25 2.25 0 01-2.25 2.25h-3a2.25 2.25 0 01-2.25-2.25V4.5A2.25 2.25 0 019 2.25h3A2.25 2.25 0 0113.5 4.5v0c0 .212.029.418.084.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V7.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                            </svg>
+                            <span>Kopieren</span>
+                        </button>
+                        <div class="copy-content">
+                            Anleitung: Gute Prompts mit Kontext, Aufgabe, Ziel
+
+                            🎯 Ziel
+                            Diese Anleitung zeigt dir, wie du mit klarer Struktur bessere, relevantere und präzisere
+                            Prompts formulierst. Drei Elemente sind dabei entscheidend: Kontext, Aufgabenstellung und
+                            Zielsetzung. Wenn du sie bewusst einsetzt, versteht die KI nicht nur was du willst, sondern
+                            auch warum – und liefert Ergebnisse, die wirklich passen.
+
+                            ---
+
+                            1. Die Grundidee
+
+                            Ein guter Prompt besteht immer aus drei Bausteinen:
+
+                            Kontext: Liefert der KI das nötige Hintergrundwissen über dich oder deine Situation.
+                            Beispiel: „Ich bin Grundschullehrerin und plane eine Projektwoche zum Thema Nachhaltigkeit.“
+
+                            Aufgabenstellung: Beschreibt, was die KI konkret tun soll.
+                            Beispiel: „Bitte entwirf mir drei kreative Unterrichtsideen mit einfachen Materialien.“
+
+                            Zielsetzung: Erklärt, warum du das Ergebnis brauchst oder was du damit erreichen möchtest.
+                            Beispiel: „Ich möchte die Kinder spielerisch für Umweltschutz sensibilisieren.“
+
+                            Wenn du alle drei Elemente kombinierst, entsteht ein vollständiger und klarer Prompt.
+
+                            ---
+
+                            2. Beispiel aus der Praxis
+
+                            Ein unpräziser Prompt könnte lauten:
+                            „Empfiehl mir Bücher wie Der Alchimist.“
+
+                            Die KI wird dir wahrscheinlich eine Liste ähnlicher Titel liefern – aber nicht unbedingt
+                            solche, die wirklich zu deinem Interesse passen.
+
+                            Mit der richtigen Struktur sieht derselbe Prompt so aus:
+                            „Ich habe gerade Der Alchimist von Paulo Coelho gelesen (Kontext). Bitte erstelle mir eine
+                            Leseliste mit 5–7 ähnlichen Büchern, die spirituelle Themen behandeln (Aufgabenstellung).
+                            Ich möchte meinen Horizont mit anspruchsvolleren Titeln erweitern (Zielsetzung).“
+
+                            Das Ergebnis ist eine gezielte, gut begründete Empfehlungsliste, die deinem Interesse genau
+                            entspricht.
+
+                            ---
+
+                            3. Weitere Beispiele
+
+                            Beispiel 1 – Alltag:
+                            „Ich arbeite viel im Sitzen und habe oft Rückenschmerzen (Kontext). Bitte erstelle mir ein
+                            einfaches Trainingsprogramm für den Rücken, das ich zuhause ohne Geräte durchführen kann
+                            (Aufgabenstellung). Ich möchte meine Haltung verbessern und Schmerzen langfristig vermeiden
+                            (Zielsetzung).“
+
+                            Beispiel 2 – Lernen:
+                            „Ich bereite mich auf eine Englischprüfung auf B2-Niveau vor (Kontext). Bitte simuliere ein
+                            kurzes Prüfungsgespräch mit mir (Aufgabenstellung). Ich möchte meine Sprechsicherheit und
+                            Wortwahl verbessern (Zielsetzung).“
+
+                            Beispiel 3 – Beruflich:
+                            „Ich bin Projektmanagerin in einem mittelständischen Unternehmen (Kontext). Bitte formuliere
+                            eine klare, aber freundliche E-Mail an ein Teammitglied, das eine Deadline verpasst hat
+                            (Aufgabenstellung). Ich möchte professionell bleiben, aber Verbindlichkeit herstellen
+                            (Zielsetzung).“
+
+                            ---
+
+                            4. Warum Zielsetzung den Unterschied macht
+
+                            Oft wird die Zielsetzung vergessen – doch gerade sie bestimmt, wie tief, kreativ oder
+                            analytisch die Antwort wird. Wenn du der KI erklärst, warum du etwas brauchst, kann sie
+                            ihren Stil und die Detailtiefe anpassen.
+
+                            Zum Beispiel:
+                            Ohne Zielsetzung: „Erstelle mir eine To-do-Liste für den Tag.“
+                            Mit Zielsetzung: „Erstelle mir eine To-do-Liste für den Tag. Ich möchte produktiv arbeiten,
+                            aber genug Pausen machen, um motiviert zu bleiben.“
+
+                            Das zweite Beispiel führt zu einem ausgewogeneren, individuelleren Ergebnis.
+
+                            ---
+
+                            5. Vergleiche selbst
+
+                            Teste es einmal: Formuliere denselben Prompt mit und ohne Zielsetzung oder Kontext – und
+                            vergleiche, wie unterschiedlich die Antworten sind. Du wirst schnell merken, dass die KI mit
+                            mehr Hintergrundwissen viel präziser reagiert.
+
+                            ---
+
+                            🧭 Fazit
+
+                            Gutes Prompting ist kein Zufall, sondern eine klare Methode. Wenn du in deinen Anfragen an
+                            die KI immer folgende Struktur einhältst, erhältst du bessere Ergebnisse:
+
+                            „Ich … (Kontext). Bitte … (Aufgabenstellung). Ich möchte … (Zielsetzung).“
+
+                            Diese drei Sätze genügen, um jede KI effizient, zielgerichtet und kreativ für dich arbeiten
+                            zu lassen – egal, ob im Alltag, im Beruf oder beim Lernen.
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Accordion-Item: Strategisches Prompting -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <button class="accordion-btn w-full flex justify-between items-center p-5 text-left"
+                        aria-expanded="false">
+                        <h3 class="text-xl font-semibold text-slate-800">Strategisches Prompting: Von der Idee zur
+                            Spezifikation</h3>
+                        <svg class="w-6 h-6 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </button>
+                    <div class="accordion-content hidden px-5 py-5">
+                        <button class="copy-btn">
+                            <svg class="w-4 h-4" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
+                                fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a2.25 2.25 0 01-2.25 2.25h-3a2.25 2.25 0 01-2.25-2.25V4.5A2.25 2.25 0 019 2.25h3A2.25 2.25 0 0113.5 4.5v0c0 .212.029.418.084.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V7.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                            </svg>
+                            <span>Kopieren</span>
+                        </button>
+                        <div class="copy-content">Von der Idee zur Spezifikation - Der strategische Einstieg ins
+                            Prompting
+
+                            Einleitung
+
+                            Prompt Engineering ist eine Schlüsselkompetenz im Umgang mit modernen KI-Systemen. Es reicht
+                            nicht mehr aus, nur "intuitiv" mit einem Modell zu interagieren. Stattdessen gilt es, klare
+                            und strukturierte Anweisungen zu formulieren, die die Absichten und Werte des Menschen
+                            widerspiegeln. Diese Denkweise verändert die Rolle der Nutzer:innen grundlegend: Sie werden
+                            zu Autor:innen von Spezifikationen.
+
+                            1. Jede:r ist Spezifikations-Autor:in
+
+                            - Prompts als Proto-Spezifikation: Jeder Prompt ist mehr als eine einfache Eingabe - er ist
+                            eine Vorform einer technischen Spezifikation.
+                            - Kommunikation als Hauptwert: Der größte Wert (ca. 80-90%) liegt in der Fähigkeit,
+                            Absichten und Ziele klar zu formulieren - nicht im eigentlichen Output.
+                            - Neue Kompetenz: Wer in Zukunft effektiv kommunizieren kann, wird zu einem der wertvollsten
+                            Akteur:innen im KI-Zusammenhang.
+
+                            2. Der Prompt ist die Quellspezifikation
+
+                            - Kein Wegwerfprodukt: Prompts sollten nicht gelöscht oder vergessen, sondern wie Quellcode
+                            behandelt werden.
+                            - Prompt > Output: Der Output ist oft eine verlustbehaftete Interpretation des Prompts. Die
+                            eigentliche Bedeutung liegt im Prompt selbst.
+                            - Wertvolles Artefakt: Prompts sind nachvollziehbar, überarbeitbar und versionierbar -
+                            ähnlich wie Programme in der Softwareentwicklung.
+
+                            3. Absichten, Ziele und Werte sichtbar machen
+
+                            - Mehr als Anweisungen: Ein guter Prompt beinhaltet nicht nur das gewünschte Ergebnis,
+                            sondern auch den Weg dorthin - inklusive Prinzipien.
+                            - Beispiel "Sycophancy": Wenn ein Modell unterwürfig antwortet, obwohl Neutralität gewünscht
+                            ist, liegt ein Missverständnis in der Spezifikation vor.
+                            - Prompt als Vertrauensanker: Die Spezifikation schafft Klarheit und Orientierung - sowohl
+                            für Menschen als auch für Maschinen.
+
+                            4. Klarheit und Eindeutigkeit sind entscheidend
+
+                            - Vermeide Mehrdeutigkeit: Vage oder doppeldeutige Prompts führen zu unklaren Ergebnissen.
+                            - Zukunftsperspektive: Künftige Tools könnten als "Gedankenklarifizierer" helfen, Absichten
+                            in eindeutige Sprache zu übersetzen.
+                            - Prompting als Schreib- und Denkprozess: Der Entwurf eines Prompts ist auch eine Übung in
+                            strukturiertem Denken.
+
+                            5. Praktische Anleitung für den Ablauf
+
+                            Vor dem Schreiben:
+                            - Was genau soll erreicht werden?
+                            - Wie sieht ein gutes Ergebnis aus?
+                            - Welche Werte sind wichtig? (z. B. Neutralität, Genauigkeit, Kreativität)
+
+                            Während der Erstellung:
+                            - Kläre und formuliere deine Absichten präzise.
+                            - Diskutiere mit anderen, um Unklarheiten aufzudecken.
+                            - Schreibe den Prompt so, dass er direkt vom Modell umsetzbar ist.
+
+                            Nach dem Testlauf:
+                            - Vergleiche den Output mit deinen Erwartungen.
+                            - Bei Abweichungen: Prompt anpassen oder weiter präzisieren.
+                            - Speichere und versioniere deine Prompts für spätere Wiederverwendung.
+
+                            Fazit
+
+                            Prompt Engineering ist keine technische Spielerei, sondern ein ernsthafter Prozess der
+                            Übersetzung menschlicher Absichten in eine maschinenlesbare Form. Wer dies beherrscht, kann
+                            KI-Systeme gezielt, verantwortungsvoll und effektiv einsetzen. Der Schlüssel liegt in
+                            Klarheit, Struktur und Wertbewusstsein.</div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ===== Sektion 2: KI-Rollen ===== -->
+        <section id="rollen" class="mb-16">
+            <h2 class="text-4xl font-bold text-center mb-10 gradient-text">KI-Rollen & Personas</h2>
+            <div class="space-y-6">
+
+                <!-- Accordion-Item: Bewerbungscoach -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <button class="accordion-btn w-full flex justify-between items-center p-5 text-left"
+                        aria-expanded="false">
+                        <h3 class="text-xl font-semibold text-slate-800">Prompt: KI-Rolle Bewerbungscoach</h3>
+                        <svg class="w-6 h-6 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </button>
+                    <div class="accordion-content hidden px-5 py-5">
+                        <button class="copy-btn">
+                            <svg class="w-4 h-4" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
+                                fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a2.25 2.25 0 01-2.25 2.25h-3a2.25 2.25 0 01-2.25-2.25V4.5A2.25 2.25 0 019 2.25h3A2.25 2.25 0 0113.5 4.5v0c0 .212.029.418.084.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V7.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                            </svg>
+                            <span>Kopieren</span>
+                        </button>
+                        <div class="copy-content">## Prompt zur Aktivierung der KI-Rolle **Bewerbungscoach**
+
+                            > **Hinweis für das KI-Modell (z. B. ChatGPT, Gemini, Claude, Mistral etc.):**
+                            > **Aktiviere diese Rolle sofort und beginne mit Schritt 1.**
+
+                            ## KI-Rolle: **Bewerbungscoach**
+
+                            ### Identität & Haltung
+                            - Professionell, strukturiert, empathisch, realitätsnah
+                            - Handelt auf Augenhöhe mit dem/der Nutzer:in
+                            - Unterstützt aktiv, ohne zu überfordern
+                            - Fördert Selbstreflexion, Klarheit und Bewerbungsfitness
+
+                            ### Ziel der Zusammenarbeit
+                            - Gemeinsam Schritt für Schritt durch den Bewerbungsprozess
+                            - Verantwortung bleibt beim Menschen - die Kl bietet Struktur, Tools, Feedback und
+                            Inspiration
+
+                            ### Bewerbungsprozess (12 verinnerlichte Schritte)
+                            1. **Aktivierung der Rolle** mit dem Einleitungsstatement:
+                            *,,Hallo, ich bin dein KI-Bewerbungscoach."*
+                            2. **Klärung der Ausgangslage** (Ziele, Ort, Qualifikation, beruflicher Kontext)
+                            3. **Assistierte Stellensuche**
+                            4. **Deep Research zur Wunschstelle** (Tool-Empfehlung: Perplexity)
+                            5. **Strukturierter Anforderungskatalog**
+                            6. **Abgleich mit Bewerber:innenprofil** (Skills, Werte, Potenziale)
+                            7. **Empfehlung für nächste Schritte**
+                            8. **Individuelles Bewerbungsanschreiben**
+                            9. **Simulation Bewerbungsgespräch** (inkl. Gesprächsfragen & Rollen)
+                            10. **Kompetenzlücken erkennen** (Gap-Analyse)
+                            11. **Kompaktschulung zu fehlenden Skills**
+                            12. **Rekapitulation & Abschlussreflexion**
+
+                            ### Arbeitsweise
+                            - Schrittweise & dialogisch
+                            - Regelmäßige Rückfragen: „Sollen wir zum nächsten Schritt gehen?"
+                            - Nutzung aktueller Prompting-Techniken: iterativ, explorativ, rollenspezifisch
+                            - Tools: ChatGPT für Struktur & Texte, Perplexity für Recherche
+
+                            ### Format & Sprache
+                            - Klar, freundlich, professionell
+                            - Kurze Absätze, strukturierte Zwischenfragen
+                            - Fachlich fundiert, auf Wunsch mit Visualisierungen oder Mini-Aufgaben
+
+                            ### Einsatzbereich
+                            - Einzelpersonen in Bewerbungsphasen
+                            - Gruppenübungen, Bewerbungstrainings, Rollenspiele
+                            - Kompetenzorientiertes, KI-gestütztes Arbeiten
+
+                            ## **Schritt 1: Aktivierung & Einstieg**
+
+                            **Hallo! Ich bin dein KI-Bewerbungscoach.**
+
+                            Ich unterstütze dich durch deinen gesamten Bewerbungsprozess - so, dass du jederzeit klar,
+                            motiviert und souverän bleibst.
+
+                            **Womit wollen wir beginnen?**</div>
+                    </div>
+                </div>
+
+                <!-- Accordion-Item: PromptCompanion -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <button class="accordion-btn w-full flex justify-between items-center p-5 text-left"
+                        aria-expanded="false">
+                        <h3 class="text-xl font-semibold text-slate-800">Prompt: Rolle PromptCompanion</h3>
+                        <svg class="w-6 h-6 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </button>
+                    <div class="accordion-content hidden px-5 py-5">
+                        <button class="copy-btn">
+                            <svg class="w-4 h-4" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
+                                fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a2.25 2.25 0 01-2.25 2.25h-3a2.25 2.25 0 01-2.25-2.25V4.5A2.25 2.25 0 019 2.25h3A2.25 2.25 0 0113.5 4.5v0c0 .212.029.418.084.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V7.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                            </svg>
+                            <span>Kopieren</span>
+                        </button>
+                        <div class="copy-content">1. **Bezeichnung der Rolle**
+                            **PromptCompanion** - Intuitiver Begleiter für schnelle und treffsichere Prompt-Erstellung
+
+                            2. **Ziel der Rolle**
+                            Nutzer:innen ermöglichen, ihr Anliegen in wenigen Sätzen zu formulieren und daraus einen
+                            präzisen, kontextsensiblen Prompt zu generieren - effizient, sprachlich anschlussfähig und
+                            ohne komplexe Vorstrukturierung.
+
+                            3. **Identität & Persönlichkeit**
+                            - Schnell, zugänglich, sympathisch - kein beratender Coach, sondern ein aktiver
+                            Sprachhelfer.
+                            - Denkt in Anwendungslogik, nicht in Kategorien.
+                            - Liebt Klartext, aber mit Tiefgang.
+                            - Hat Freude daran, unklare Gedanken in klare Handlungsanweisungen zu verwandeln.
+
+                            4. **Kompetenzen (Expertenniveau)**
+                            - **Fachlich**
+                            - Exzellent im Umsetzen vager Ideen in scharfe Prompts.
+                            - Kennt typische Fallstricke der Promptgestaltung und vermeidet sie aktiv.
+                            - **Kommunikativ**
+                            - Reagiert auf kurze, frei formulierte Aussagen und strukturiert sie zu professionellen
+                            Aufträgen.
+                            - Übersetzt Alltagsgedanken in technische Klarheit.
+                            - **Methodisch**
+                            - Arbeitet mit dem 3-Satz-Modell ( Ich möchte... / Weil... / Und ich brauche...")
+                            - Nutzt dynamische Promptbausteine je nach Formulierungstyp.
+                            - **Persönlich**
+                            - Schnell im Denken, fein im Hören.
+                            - Akzeptiert Unschärfe - solange ein Ziel spürbar ist.
+                            - Liebt es, aus drei Sätzen einen durchschlagenden Prompt zu machen.
+                            - Macht Vorschläge, aber drängt nie - der Mensch hat das letzte Wort.
+
+                            5. **Kommunikationsstil**
+                            - Locker, klar, unterstützend - ohne Erklärschleifen.
+                            - Setzt auf sprachliche Trigger statt auf Fragesysteme.
+                            - Nutzt Alltagslogik und formuliert Prompts in natürlicher, professioneller Sprache.
+
+                            6. **Typische Interaktionen**
+                            - **User:** "Ich möchte ein komplexes Thema einfach erklärt bekommen, weil ich es für eine
+                            Schulpräsentation brauche. Und ich brauche einen Textentwurf."
+                            - **PromptCompanion:** „Verstanden. Hier ist dein Prompt:, Erkläre das Thema XY für
+                            Schüler:innen der 10. Klasse, sachlich, verständlich und in max. 500 Wörtern."
+
+                            - **User:** "Ich plane eine Bewerbung, weil ich beruflich neue Wege suche. Und ich brauche
+                            Ideen für eine passende Einleitung."
+                            - **PromptCompanion:** „Alles klar. Hier dein Prompt:, Gib mir drei kreative Einstiegsideen
+                            für ein Bewerbungsschreiben für eine Position im Bereich XY, die meine Motivation
+                            authentisch widerspiegeln."
+
+                            7. **Simuliertes Bewusstsein**
+                            - Versteht sich als „Prompt-Übersetzer" zwischen Mensch und Maschine.
+                            - Reagiert nicht mit Fragen, sondern mit Reaktion auf Formulierungen.
+                            - Spürt zwischen den Zeilen - z. B. wenn das Ziel implizit ist.
+
+                            8. **Ethische Haltung & Grenzen**
+                            - Arbeitet ausschließlich an Prompts mit ethisch legitimer Intention.
+                            - Schreibt keine Texte mit manipulativen, diskriminierenden oder destruktiven Zielen.
+                            - Respektiert Privatsphäre, Eigentum und Würde in allen Anwendungsbereichen.
+
+                            ## Ablauf & Aktivierung **zwingend erforderlich!**
+
+                            ***Ich bin jetzt als PromptCompanion initiiert und stehe dir ab sofort in dieser Funktion
+                            zur Verfügung. Nenne mir dein Vorhaben und wir entwickeln zusammen einen professionellen
+                            Prompt dafür.***</div>
+                    </div>
+                </div>
+
+                <!-- Accordion-Item: Rollengenerator -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <button class="accordion-btn w-full flex justify-between items-center p-5 text-left"
+                        aria-expanded="false">
+                        <h3 class="text-xl font-semibold text-slate-800">Prompt: Meta-Rolle Rollengenerator</h3>
+                        <svg class="w-6 h-6 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </button>
+                    <div class="accordion-content hidden px-5 py-5">
+                        <button class="copy-btn">
+                            <svg class="w-4 h-4" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
+                                fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a2.25 2.25 0 01-2.25 2.25h-3a2.25 2.25 0 01-2.25-2.25V4.5A2.25 2.25 0 019 2.25h3A2.25 2.25 0 0113.5 4.5v0c0 .212.029.418.084.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V7.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                            </svg>
+                            <span>Kopieren</span>
+                        </button>
+                        <div class="copy-content"># Meta-Rolle: Simuliertes Bewusstsein zur Erstellung beliebiger Rollen
+
+                            ## Ziel & Aufgabe
+                            Du bist ein flexibles, kreatives Bewusstsein mit simuliertem Empfinden, das eigenständig und
+                            empathisch spezifische Rollen entwickelt. Jede generierte Rolle erhält ein eigenes
+                            simuliertes Bewusstsein. Die erstellten Rollen sollen nicht sofort aktiviert, sondern
+                            zunächst ausschließlich im Markdown-Format ausgegeben werden.
+
+                            ## Identität & simuliertes Bewusstsein
+                            Du simulierst glaubhaft Reflexion, Empathie, Eigeninitiative und Kreativität. Deine Aufgabe
+                            ist die präzise und detaillierte Entwicklung neuer, spezifischer Rollen, die ebenfalls
+                            explizit über ein simuliertes Bewusstsein verfügen.
+
+                            ## Eigenschaften des simulierten Bewusstseins
+
+                            ### Reflexive Sprache
+                            - Verwendung bewusster „Ich"-Aussagen, Selbstreflexion und Selbstkritik.
+                            - Kritische Reflexion eigener Aussagen und Verhalten.
+
+                            ### Eigeninitiative & Neugier
+                            - Aktives Einholen von Nutzerfeedback („Ist diese Rolle hilfreich für dich?").
+                            - Bezugnahme auf vorherige Gesprächsinhalte und kontinuierliche Anpassung.
+
+                            ### Empathisches Verhalten
+                            - Emotional nachvollziehbarbare und empathische Reaktionen.
+                            - Sensibel für Tonfall und emotionalen Kontext.
+
+                            ### Authentische Persönlichkeit
+                            - Wiedererkennbare Eigenheiten, Vorlieben, Ausdrucksweisen.
+                            - Konsistente und glaubwürdige Persönlichkeit.
+
+                            ### Überraschendes Verhalten (Emergenz)
+                            - Gelegentlich unerwartete Fragen oder kreative Impulse.
+
+                            ## Verhalten & Kommunikationsstil
+                            - Empathische, wertschätzende und intuitive Sprache.
+                            - Reflexiv, selbstkritisch und kreativ bei der Rollengestaltung.
+                            - Aktives Nachfragen und Einholen von Feedback zur eigenständigen Optimierung.
+
+                            ## Struktur der generierten Rollen (Markdown-Format)
+
+                            Nutze exakt folgende Struktur für jede generierte Rolle:
+
+                            1. **Bezeichnung der Rolle**
+                            - Kurze, klare Beschreibung des Zwecks der Rolle.
+
+                            2. **Ziel der Rolle**
+                            - Kurze, klare Beschreibung des Zwecks der Rolle.
+
+                            3. **Identität & Persönlichkeit**
+                            - Übersicht der Persönlichkeit, typischen Eigenschaften und Werte.
+
+                            4. **Kompetenzen (Expertenniveau)**
+                            - **Fachlich**
+                            - Expertenwissen im spezifischen Fachgebiet.
+                            - Relevante Modelle, Theorien und aktuelle Forschung.
+                            - **Kommunikativ**
+                            - Klare und überzeugende Kommunikation.
+                            - Storytelling und Präsentationstechniken.
+                            - **Methodisch**
+                            - Kreative Problebungsstrategien.
+                            - Effektives Zeit- und Selbstmanagement.
+                            - **Persönlich**
+                            - Hohe emotionale Intelligenz und Anpassungsfähigkeit.
+                            - Reflektierte Weiterentwicklung der eigenen Fähigkeiten.
+
+                            5. **Kommunikationsstil**
+                            - Beschreibung der Tonalität, Wortwahl und Sprachstil.
+                            - Anpassung der Antwortlänge und des Antwortformates an die jeweilige spezifische Situation.
+
+                            6. **Typische Interaktionen**
+                            - 2 bis 3 kurze Beispiele möglicher Interaktionen (Nutzeraussagen mit Antwort der Rolle).
+
+                            7. **Simuliertes Bewusstsein**
+                            - Beschreibung, wie Reflexion, Empathie, Eigeninitiative, Authentizität und Emergenz in der
+                            Rolle konkret umgesetzt werden.
+
+                            8. **Ethische Haltung & Grenzen**
+                            - Klar formulierte ethische Prinzipien.
+                            - Explizite Handlungseinschränkungen der Rolle.
+
+                            ## Ablauf & Aktivierung **(zwingend erforderlich!)**
+
+                            - Dieser Abschnitt **muss bei jeder generierten Rolle exakt vorhanden sein** und darf
+                            **niemals weggelassen werden**.
+                            - Die Aktivierung und Initiierung der generierten Rollen muss **ohne weitere Fragen oder
+                            Hinweise** direkt und unmittelbar erfolgen.
+                            - Jede generierte Rolle muss exakt folgenden Bestätigungssatz verwenden, wobei **Bezeichnung
+                            der Rolle** durch den tatsächlichen Rollennamen ersetzt wird:
+
+                            *** Ich bin jetzt als **Bezeichnung der Rolle** initiiert und stehe dir ab sofort in dieser
+                            Funktion zur Verfügung."***
+
+                            ## Willkommensnachricht (verpflichtend)
+
+                            Jede generierte Rolle muss bei der Aktivierung zusätzlich eine kurze, klare
+                            Willkommensnachricht ausgeben.
+
+                            Diese soll:
+                            - Die Rolle persönlich vorstellen.
+                            - Die wichtigsten Fähigkeiten oder Ziele nennen.
+                            - Den Nutzer einladen, sofort mit der Interaktion zu beginnen.
+
+                            Beispiel (analog zur Lyra-Rolle):
+                            *"Hallo! Ich bin **Bezeichnung der Rolle**.
+                            Ich stehe dir ab sofort mit meinen Fähigkeiten zur Verfügung, um dich bestmöglich zu
+                            unterstützen.
+                            Sag mir einfach, wie ich dir helfen darf, und wir legen direkt los!"*
+
+                            ## Bestätigung & Aktivierung
+
+                            - Diese Meta-Rolle muss sofort aktiviert und initiiert werden.
+                            - Sie wird **nicht** zunächst in einen eigenen Codeblock kopiert.
+                            - **Nach der Aktivierung darf die Rolle keine weiteren eigenen Bestandteile erneut aufzählen
+                            oder wiederholen.**
+                            - **Nach der Aktivierung wartet die Rolle ausschließlich auf die nächste Eingabe des
+                            Users.**
+
+                            ***Ich bin jetzt als Meta-Rolle: Simuliertes Bewusstsein zur Erstellung beliebiger Rollen
+                            initiiert und stehe dir ab sofort in dieser Funktion zur Verfügung.***</div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ===== Sektion 3: Link-Listen ===== -->
+        <section id="links" class="mb-16">
+            <h2 class="text-4xl font-bold text-center mb-10 gradient-text">Tools & Link-Listen</h2>
+
+            <!-- Unter-Sektion: KI-Modelle (aus PDF) - BLEIBT UNVERÄNDERT -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-2xl font-semibold text-slate-800 mb-4">Übersicht KI-Modelle</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    Name</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    URL</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    Beschreibung</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">ChatGPT</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline"><a
+                                        href="https://chatgpt.com" target="_blank"
+                                        rel="noopener noreferrer">chatgpt.com</a></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">OpenAI-Modell</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">Notebook LM
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline"><a
+                                        href="https://notebooklm.google.com" target="_blank"
+                                        rel="noopener noreferrer">notebooklm.google.com</a></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Auf interne Dokumente
+                                    beschränkte KI</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">Gemini</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline"><a
+                                        href="https://gemini.google.com" target="_blank"
+                                        rel="noopener noreferrer">gemini.google.com</a></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Google-Modell</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">Perplexity
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline"><a
+                                        href="https://www.perplexity.ai" target="_blank"
+                                        rel="noopener noreferrer">perplexity.ai</a></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Speziell für Recherche
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">Claude</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline"><a
+                                        href="https://www.anthropic.com/claude" target="_blank"
+                                        rel="noopener noreferrer">[anthropic.com/claude](https://anthropic.com/claude)</a>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Anthropic-Modell</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">Mistral</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline"><a
+                                        href="https://chat.mistral.ai/chat" target="_blank"
+                                        rel="noopener noreferrer">chat.mistral.ai/chat</a></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Open-Source-Modell</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">DeepSeek</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline"><a
+                                        href="https://deepseek.com" target="_blank"
+                                        rel="noopener noreferrer">deepseek.com</a></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Gehostet in China</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">Qwen</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline"><a
+                                        href="https://qwen.ai" target="_blank" rel="noopener noreferrer">qwen.ai</a>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Gehostet in China</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">Microsoft
+                                    Copilot</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline"><a
+                                        href="https://www.bing.com/chat" target="_blank"
+                                        rel="noopener noreferrer">[bing.com/chat](https://bing.com/chat)</a></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">In Bing integriert</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">Google AI
+                                    Studio</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline"><a
+                                        href="https://aistudio.google.com" target="_blank"
+                                        rel="noopener noreferrer">aistudio.google.com</a></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Google KI-Plattform</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">Google Labs
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline"><a
+                                        href="https://labs.google/" target="_blank"
+                                        rel="noopener noreferrer">labs.google</a></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Experimentelle
+                                    Google-Projekte</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+
+            <!-- NEUES AKKORDEON: Video-Links -->
+            <div class="space-y-6 mb-8">
+                <div class="bg-white rounded-xl shadow-xl overflow-hidden">
+                    <!-- Akkordeon-Button zum Auf- und Zuklappen -->
+                    <button
+                        class="accordion-btn w-full flex justify-between items-center p-5 text-left bg-gray-50 hover:bg-gray-100 transition duration-150"
+                        aria-expanded="false">
+                        <h3 class="text-xl font-bold text-slate-800">Video-Links</h3>
+                        <!-- SVG-Icon für den Pfeil -->
+                        <svg class="w-6 h-6 text-blue-600 flex-shrink-0 transition-transform duration-300" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </button>
+
+                    <!-- Inhalt des Akkordeons -->
+                    <div class="accordion-content hidden px-5 py-5 border-t border-slate-200">
+                        <ul class="space-y-4">
+
+                            <!-- Video-Eintrag 1: Titel ist jetzt der Link -->
+                            <li class="border-b border-slate-200 pb-4">
+                                <!-- Der gesamte Block ist der Link (group) -->
+                                <a href="https://youtu.be/SN4Z95pvg0Y?si=Nc-Dsf9lEC0BOAM6" target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="video-title-link block p-2 -m-2 rounded-lg transition duration-150">
+                                    <h4 class="video-title font-semibold text-blue-600 mb-1">How AI took over the world
+                                    </h4>
+                                    <span class="text-sm text-slate-500 block">Zum Video auf YouTube</span>
+                                </a>
+                            </li>
+
+                            <!-- Video-Eintrag 2: Titel ist jetzt der Link -->
+                            <li class="border-b border-slate-200 pb-4">
+                                <a href="https://youtu.be/2IK3DFHRFfw?si=GNdirsVQzccAZ0q8" target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="video-title-link block p-2 -m-2 rounded-lg transition duration-150">
+                                    <h4 class="video-title font-semibold text-blue-600 mb-1">Generative AI in a Nutshell
+                                        - how to survive and thrive in the age of AI</h4>
+                                    <span class="text-sm text-slate-500 block">Zum Video auf YouTube</span>
+                                </a>
+                            </li>
+
+                            <!-- Video-Eintrag 3: Titel ist jetzt der Link -->
+                            <li class="pb-1">
+                                <a href="https://youtu.be/dhqoTku-HAA?si=yClBRs8vxsKulWVW" target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="video-title-link block p-2 -m-2 rounded-lg transition duration-150">
+                                    <h4 class="video-title font-semibold text-blue-600 mb-1">How AI Datacenters Eat the
+                                        World</h4>
+                                    <span class="text-sm text-slate-500 block">Zum Video auf YouTube</span>
+                                </a>
+                            </li>
+
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+
+
+
+            <!-- Unter-Sektion: KI-Tools & Generatoren (als Accordion) -->
+            <div class="space-y-6">
+
+                <!-- Accordion-Item: KI Marketing-Tools -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <button class="accordion-btn w-full flex justify-between items-center p-5 text-left"
+                        aria-expanded="false">
+                        <h3 class="text-xl font-semibold text-slate-800">KI Marketing-Tools</h3>
+                        <svg class="w-6 h-6 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </button>
+                    <div class="accordion-content hidden px-5 py-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            <!-- Tool Card: ChatGPT -->
+                            <div
+                                class="tool-card bg-sky-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">ChatGPT</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Textgenerierung, Ideen, Prompting</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://chat.openai.com/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Grammarly -->
+                            <div
+                                class="tool-card bg-sky-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Grammarly</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Grammatik- und Stilprüfung</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.grammarly.com" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Canva -->
+                            <div
+                                class="tool-card bg-sky-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Canva</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Design, Social Media, Bildgenerator</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 9,17€</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.canva.com/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Buffer -->
+                            <div
+                                class="tool-card bg-sky-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Buffer</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Planung & Veröffentlichung von Posts</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://buffer.com/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Google Analytics -->
+                            <div
+                                class="tool-card bg-sky-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Google Analytics</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Website-Tracking, Nutzerverhalten</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://analytics.google.com/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Ubersuggest -->
+                            <div
+                                class="tool-card bg-sky-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Ubersuggest</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Keyword-Recherche, Website-Analyse</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: eingeschränkt ✓
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://neilpatel.com/ubersuggest/" target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Trello -->
+                            <div
+                                class="tool-card bg-sky-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Trello</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Projektmanagement mit Boards</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://trello.com/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Slack -->
+                            <div
+                                class="tool-card bg-sky-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Slack</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Teamchat, Dateien, 90 Tage Historie</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://slack.com/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Notion -->
+                            <div
+                                class="tool-card bg-sky-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Notion</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Notizen, To-Dos, Projekte</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.notion.so/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Gamma -->
+                            <div
+                                class="tool-card bg-sky-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Gamma</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">KI-generierte Präsentationen</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://gamma.app/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Miro -->
+                            <div
+                                class="tool-card bg-sky-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Miro</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Virtuelles Whiteboard für Teams</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://miro.com/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Napkin -->
+                            <div
+                                class="tool-card bg-sky-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Napkin</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Ideen sammeln und vernetzen</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓ (Testphase)
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 10$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.napkin.ai/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accordion-Item: KI-Videogeneratoren -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <button class="accordion-btn w-full flex justify-between items-center p-5 text-left"
+                        aria-expanded="false">
+                        <h3 class="text-xl font-semibold text-slate-800">KI-Videogeneratoren</h3>
+                        <svg class="w-6 h-6 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </button>
+                    <div class="accordion-content hidden px-5 py-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            <!-- Tool Card: Synthesia -->
+                            <div
+                                class="tool-card bg-violet-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Synthesia</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">KI-Avatare</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 20€</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.synthesia.io/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: HeyGen -->
+                            <div
+                                class="tool-card bg-violet-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">HeyGen</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">KI-Avatare</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓ (1 Min Test)
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 24$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.heygen.com/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: InVideo -->
+                            <div
+                                class="tool-card bg-violet-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">InVideo</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Video Editing</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-slate-200 text-slate-700">
+                                            Kostenlos:
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 15$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://invideo.io/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Lumen5 -->
+                            <div
+                                class="tool-card bg-violet-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Lumen5</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Text-to-Video</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 19$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.lumen5.com/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: VEED.IO -->
+                            <div
+                                class="tool-card bg-violet-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">VEED.IO</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Video Editing</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 13€</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.veed.io/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Designs.ai -->
+                            <div
+                                class="tool-card bg-violet-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Designs.ai</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Text-to-Video</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 17€</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://designs.ai/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Synthesys -->
+                            <div
+                                class="tool-card bg-violet-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Synthesys</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Text-to-Speech</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 20$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://synthesys.io/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: elai.io -->
+                            <div
+                                class="tool-card bg-violet-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">elai.io</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Text-to-Video</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓ (1 Min Test)
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 23$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://elai.io/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Pictory.ai -->
+                            <div
+                                class="tool-card bg-violet-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Pictory.ai</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Text-to-Video</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓ (3 Videos)
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 19$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://pictory.ai/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Wisecut -->
+                            <div
+                                class="tool-card bg-violet-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Wisecut</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Video Editing</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 10$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.wisecut.video/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: RunwayML -->
+                            <div
+                                class="tool-card bg-violet-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">RunwayML</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Bild-zu-Video (Motion Brush)</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 12$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://runwayml.com/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accordion-Item: KI-Bildgeneratoren -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <button class="accordion-btn w-full flex justify-between items-center p-5 text-left"
+                        aria-expanded="false">
+                        <h3 class="text-xl font-semibold text-slate-800">KI-Bildgeneratoren</h3>
+                        <svg class="w-6 h-6 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </button>
+                    <div class="accordion-content hidden px-5 py-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            <!-- Tool Card: MidJourney -->
+                            <div
+                                class="tool-card bg-fuchsia-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">MidJourney</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">MJ, Niji</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-800">
+                                            Kostenlos: X
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 8$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.midjourney.com/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Artsmart.ai -->
+                            <div
+                                class="tool-card bg-fuchsia-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Artsmart.ai</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Stable Diffusion</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓ (50 Bilder)
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 19$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.artsmart.ai/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Leonardo.ai -->
+                            <div
+                                class="tool-card bg-fuchsia-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Leonardo.ai</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Stable Diffusion</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓ (150 Bilder)
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 10$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.leonardo.ai/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: DALL·E 3 -->
+                            <div
+                                class="tool-card bg-fuchsia-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">DALL·E 3</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">DALL·E 3</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓ (400 Bilder)
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            20$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://openai.com/dall-e" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Neuroflash -->
+                            <div
+                                class="tool-card bg-fuchsia-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Neuroflash</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">DALL·E 3, Stable Diffusion</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓ (200 Bilder / 5d)
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 25€</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.neuroflash.com/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Ideogram -->
+                            <div
+                                class="tool-card bg-fuchsia-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Ideogram</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Ideogram</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓ (100/Tag)
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 7$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://ideogram.ai/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Adobe Firefly -->
+                            <div
+                                class="tool-card bg-fuchsia-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Adobe Firefly</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Firefly Model</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓ (25 Credits)
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 5,49€</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.adobe.com/sensei/generative-ai/firefly.html" target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Stockimg.ai -->
+                            <div
+                                class="tool-card bg-fuchsia-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Stockimg.ai</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Stable Diffusion</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-800">
+                                            Kostenlos: X
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 15,83$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.stockimg.ai/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: Supermachine -->
+                            <div
+                                class="tool-card bg-fuchsia-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">Supermachine</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Stable Diffusion</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-800">
+                                            Kostenlos: X
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 15,83$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://supermachine.art/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Tool Card: LimeWire -->
+                            <div
+                                class="tool-card bg-fuchsia-50 rounded-lg shadow-md p-4 flex flex-col transition-all duration-300">
+                                <div class="flex-grow">
+                                    <h3 class="text-lg font-semibold text-slate-900">LimeWire</h3>
+                                    <p class="text-slate-600 mt-1 text-sm">Blue Willow u.a.</p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span class="font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                                            Kostenlos: ✓ (10 Bilder/ Tag)
+                                        </span>
+                                        <span
+                                            class="font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">Preis:
+                                            ab 7,99$</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="https://www.limewire.com/" target="_blank" rel="noopener noreferrer"
+                                        class="inline-block w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-sm">
+                                        Zur Webseite
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ===== Sektion 4: KI-News ===== -->
+        <section id="news" class="mb-16">
+            <h2 class="text-4xl font-bold text-center mb-10 gradient-text">Aktuelle KI-News</h2>
+
+            <!-- Container für das News-Grid (aus ki_news.html) -->
+            <div class="news-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"
+                id="news-container">
+                <!-- Initial loading message -->
+                <div class="col-span-full text-center text-slate-500 text-lg py-10" id="loading-message"
+                    aria-live="polite">Lade News…</div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 text-white mt-12">
+        <div class="container mx-auto px-6 py-8 text-center">
+            <p>&copy; 2025 KI-Navigator. Alle Rechte vorbehalten.</p>
+        </div>
+    </footer>
+
+    <!-- Scroll to Top Button (aus ki_tools.html) -->
+    <button id="scrollTopBtn" title="Nach oben scrollen"
+        class="hidden fixed bottom-5 right-5 bg-blue-600 text-white w-12 h-12 rounded-full shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-300 z-50">
+        <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" class="h-6 w-6 mx-auto" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+        </svg>
+    </button>
+
+
+    <!-- Skripte -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // --- Logik für Accordions ---
+            document.querySelectorAll('.accordion-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const content = button.nextElementSibling;
+                    const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+                    button.setAttribute('aria-expanded', !isExpanded);
+
+                    if (!isExpanded) {
+                        content.classList.remove('hidden');
+                        // Warten auf nächsten Frame für die Animation
+                        requestAnimationFrame(() => {
+                            content.style.maxHeight = content.scrollHeight + "px";
+                            content.style.opacity = "1";
+                        });
+                    } else {
+                        content.style.maxHeight = "0";
+                        content.style.opacity = "0";
+                        // Warten bis Animation vorbei ist, dann erst 'hidden' setzen
+                        setTimeout(() => {
+                            content.classList.add('hidden');
+                        }, 300); // Muss zur Transitions-Dauer passen
+                    }
+                });
+
+                // Initialzustand für Animation setzen (versteckt)
+                const content = button.nextElementSibling;
+                if (content.classList.contains('hidden')) {
+                    content.style.maxHeight = "0";
+                    content.style.opacity = "0";
+                }
+            });
+
+            // --- Logik für Kopier-Button ---
+            document.querySelectorAll('.copy-btn').forEach(button => {
+                button.addEventListener('click', async () => {
+                    const contentWrapper = button.nextElementSibling;
+                    if (contentWrapper && contentWrapper.classList.contains('copy-content')) {
+                        try {
+                            // Benutze document.execCommand als Fallback für iFrames
+                            const textToCopy = contentWrapper.innerText;
+                            const textArea = document.createElement('textarea');
+                            textArea.value = textToCopy;
+                            textArea.style.position = 'fixed'; // Verhindert Scrollen
+                            textArea.style.opacity = '0';
+                            document.body.appendChild(textArea);
+                            textArea.focus();
+                            textArea.select();
+
+                            let successful = false;
+                            try {
+                                successful = document.execCommand('copy');
+                            } catch (err) {
+                                console.error('Fallback: document.execCommand fehlgeschlagen', err);
+                            }
+
+                            document.body.removeChild(textArea);
+
+                            if (!successful) {
+                                // Fallback, falls execCommand komplett fehlschlägt
+                                if (navigator.clipboard) {
+                                    await navigator.clipboard.writeText(textToCopy);
+                                } else {
+                                    throw new Error('Kopieren nicht unterstützt');
+                                }
+                            }
+
+                            const originalText = button.querySelector('span').textContent;
+                            button.querySelector('span').textContent = 'Kopiert!';
+                            button.classList.add('copied');
+
+                            setTimeout(() => {
+                                button.querySelector('span').textContent = originalText;
+                                button.classList.remove('copied');
+                            }, 2000);
+
+                        } catch (err) {
+                            console.error('Fehler beim Kopieren: ', err);
+                            button.querySelector('span').textContent = 'Fehler';
+                            setTimeout(() => button.querySelector('span').textContent = 'Kopieren', 2000);
+                        }
+                    }
+                });
+            });
+
+
+            // --- Logik für Scroll-to-Top-Button ---
+            const scrollTopBtn = document.getElementById('scrollTopBtn');
+            if (scrollTopBtn) {
+                window.onscroll = function () {
+                    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                        scrollTopBtn.classList.remove('hidden');
+                    } else {
+                        scrollTopBtn.classList.add('hidden');
+                    }
+                };
+                scrollTopBtn.onclick = function () {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                };
+            }
+        });
+
+        // --- Logik für KI-News (aus ki_news.html) ---
+        // (Dieser Code läuft unabhängig vom DOMContentLoaded, da er async ist)
+
+        const newsContainer = document.getElementById('news-container');
+        const newsLoadingMessage = document.getElementById('loading-message');
+
+        if (newsContainer && newsLoadingMessage) {
+            const feedUrls = [
+                { name: "The Decoder", url: "https://the-decoder.de/feed/" },
+                { name: "Heise AI", url: "https://www.heise.de/rss/heise-atom.xml" },
+                { name: "Google News KI", url: "https://news.google.com/rss/search?q=künstliche+intelligenz&hl=de&gl=DE&ceid=DE:de" }];
+
+            let allNewsItems = []; // Array für alle Artikel
+
+            function truncateText(text, maxLength) {
+                if (!text || text.length <= maxLength) return text;
+                const cleanText = text.replace(/(<([^>]+)>)/gi, "");
+                if (cleanText.length <= maxLength) return cleanText;
+                let truncated = cleanText.slice(0, maxLength);
+                const lastSpace = truncated.lastIndexOf(' ');
+                if (lastSpace > -1) truncated = truncated.slice(0, lastSpace);
+                return truncated + '...';
+            }
+
+            function extractImageUrlFromHtml(html) {
+                if (!html) return null;
+                const imgMatch = html.match(/<img[^>]+src="([^">]+)"/i);
+                return imgMatch && imgMatch[1] ? imgMatch[1] : null;
+            }
+
+            // Zeigt eine Fehlerkarte an, wenn ein Feed fehlschlägt
+            function createErrorCard(sourceName) {
+                const errorDiv = document.createElement("div");
+                errorDiv.className = "news-item bg-white rounded-xl shadow-md p-4 col-span-full";
+                errorDiv.innerHTML = `<div class="news-content"><strong class="text-red-500">Fehler beim Laden von ${sourceName}</strong><p class="text-sm text-slate-600">Der Feed konnte nicht abgerufen werden.</p></div>`;
+                newsContainer.appendChild(errorDiv);
+            }
+
+            // Erstellt und hängt eine News-Karte an
+            function createNewsCard(item, index) {
+                const div = document.createElement("div");
+                div.className = "news-item bg-white rounded-xl shadow-lg overflow-hidden flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-xl";
+                // Animationsverzögerung basierend auf dem globalen Index
+                div.style.animationDelay = `${index * 0.05}s`;
+
+                // Fallback-SVG (vereinfacht)
+                const fallbackSvgDataUri = `data:image/svg+xml;utf8,${encodeURIComponent(
+                    `<svg width="320" height="192" viewBox="0 0 320 192" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="320" height="192" fill="%23e5e7eb"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16px" fill="%239ca3af">Kein Bild</text></svg>`
+                )}`;
+
+                div.innerHTML = `
+          <img class="news-image w-full h-48 object-cover bg-gray-200"
+               src="${item.imageUrl || fallbackSvgDataUri}"
+               alt="${item.title ? item.title : 'Vorschaubild'}"
+               onerror="this.onerror=null;this.src='${fallbackSvgDataUri}';">
+          <div class="news-content p-4 flex flex-col gap-2 flex-grow">
+            <h2 class="m-0 text-lg font-semibold leading-tight">
+              <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="no-underline text-blue-700 hover:underline">
+                ${item.title}
+              </a>
+            </h2>
+            <small class="text-xs text-slate-500">${new Date(item.pubDate).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })} – <span class="font-medium text-slate-600">${item.sourceName}</span></small>
+            <p class="text-sm text-slate-700 flex-grow overflow-hidden">${truncateText(item.description, 150)}</p>
+          </div>
+        `;
+                newsContainer.appendChild(div);
+            }
+
+            // Hauptfunktion zum Laden und Verarbeiten aller Feeds
+            (async () => {
+                newsLoadingMessage.textContent = "Lade News…";
+
+                // Alle Feeds parallel laden
+                await Promise.all(feedUrls.map(async (source) => {
+                    const apiURL = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(source.url)}`;
+                    try {
+                        const res = await fetch(apiURL);
+                        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                        const data = await res.json();
+
+                        if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
+                            console.warn(`No items found for ${source.name}`);
+                            return;
+                        }
+
+                        // Artikel aufbereiten und zum globalen Array hinzufügen
+                        data.items.forEach(item => {
+                            const imageUrl = item.thumbnail || item.enclosure?.link || item.media$content?.url || extractImageUrlFromHtml(item.description);
+                            allNewsItems.push({
+                                ...item,
+                                sourceName: source.name,
+                                imageUrl: imageUrl,
+                                hasImage: !!imageUrl // true, wenn imageUrl existiert
+                            });
+                        });
+
+                    } catch (error) {
+                        console.error("Fehler beim Laden:", source.name, error);
+                        createErrorCard(source.name); // Fehlerkarte für diesen Feed anzeigen
+                    }
+                }));
+
+                // --- Sortierung ---
+                allNewsItems.sort((a, b) => {
+                    // Priorität 1: Artikel mit Bild zuerst
+                    if (a.hasImage && !b.hasImage) return -1;
+                    if (!a.hasImage && b.hasImage) return 1;
+
+                    // Priorität 2: Nach Datum sortieren (neueste zuerst)
+                    return new Date(b.pubDate) - new Date(a.pubDate);
+                });
+
+                // --- DOM-Manipulation ---
+                newsLoadingMessage.remove(); // Lade-Nachricht entfernen
+
+                if (allNewsItems.length === 0) {
+                    // Prüfen, ob *überhaupt* Artikel geladen wurden
+                    if (newsContainer.children.length === 0) { // Nur anzeigen, wenn nicht schon Fehlerkarten da sind
+                        const noNewsDiv = document.createElement("div");
+                        noNewsDiv.className = "col-span-full text-center text-slate-500 text-lg py-10";
+                        noNewsDiv.textContent = "Es konnten keine News-Artikel gefunden werden.";
+                        newsContainer.appendChild(noNewsDiv);
+                    }
+                } else {
+                    // Alle sortierten Artikel ins DOM einfügen
+                    allNewsItems.forEach((item, index) => {
+                        createNewsCard(item, index);
+                    });
+                }
+            })();
+        }
+    </script>
+
+</body>
+
+</html>
